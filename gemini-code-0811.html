@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工程驗收分區記錄系統</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; color: black; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
+
+    <!-- 頂端導航列 -->
+    <header class="bg-slate-800 text-white p-4 shadow-md sticky top-0 z-30 no-print">
+        <div class="max-w-4xl mx-auto flex justify-between items-center flex-wrap gap-2">
+            <h1 class="text-lg font-bold flex items-center gap-2">
+                <i class="bi bi-clipboard-check text-amber-400 text-xl"></i>
+                工程驗收紀錄
+            </h1>
+            
+            <!-- 戶別選擇與管理 -->
+            <div class="flex items-center gap-2">
+                <label for="unitSelect" class="text-xs text-slate-300">戶別：</label>
+                <select id="unitSelect" class="bg-slate-700 text-white text-sm font-semibold rounded-lg px-3 py-1.5 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    <!-- 動態渲染戶別 -->
+                </select>
+                <button onclick="openUnitModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg border border-slate-600 transition flex items-center gap-1">
+                    <i class="bi bi-gear-fill"></i> 管理戶別
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
+
+        <!-- Dashboard 統計面板 (螢幕顯示) -->
+        <section class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 no-print">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">當前戶別概況</span>
+                    <h2 class="text-xl font-black text-slate-800" id="currentUnitTitle">--</h2>
+                </div>
+                <div class="bg-rose-50 border border-rose-100 rounded-xl px-4 py-2 text-right">
+                    <span class="text-xs text-rose-500 font-medium">總缺失數</span>
+                    <div class="text-2xl font-black text-rose-600" id="totalIssuesCount">0</div>
+                </div>
+            </div>
+
+            <!-- 區域快速跳轉卡片區 -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5" id="zoneOverviewCards">
+                <!-- JS 動態渲染區域統計卡片 -->
+            </div>
+        </section>
+
+        <!-- 區域分頁籤 & 操作區 -->
+        <section class="no-print space-y-4">
+            <!-- 區域切換 Tab -->
+            <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-none" id="zoneTabs">
+                <!-- JS 動態渲染頁籤 -->
+            </div>
+
+            <!-- 平面圖與新增按鈕 -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center flex-wrap gap-2">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                        <i class="bi bi-geo-alt-fill text-indigo-500"></i>
+                        <span id="currentZoneTitle">玄關</span> 平面圖
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <!-- 上傳/更換平面圖按鈕 -->
+                        <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1">
+                            <i class="bi bi-image"></i> 更換平面圖
+                            <input type="file" id="uploadPlanInput" accept="image/*" class="hidden" onchange="handleUploadPlan(event)">
+                        </label>
+                        <button onclick="openModal()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-sm px-4 py-2 rounded-xl shadow-md transition flex items-center gap-1.5">
+                            <i class="bi bi-plus-lg"></i> 新增缺失
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 平面參考圖區塊 -->
+                <div class="relative w-full h-52 sm:h-64 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
+                    <img id="zonePlanImg" src="" alt="平面圖" class="w-full h-full object-contain">
+                    <span class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">區域圖示</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 缺失列表區 -->
+        <section class="no-print space-y-3">
+            <div class="flex justify-between items-center px-1">
+                <h3 class="font-bold text-slate-700 text-base">缺失項目明細</h3>
+                <button onclick="generateReport()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                    <i class="bi bi-file-earmark-text"></i> 產生統計報表
+                </button>
+            </div>
+
+            <div id="issueList" class="space-y-3">
+                <!-- JS 動態渲染缺失卡片 -->
+            </div>
+        </section>
+
+        <!-- 列印 / 匯出專用報表視圖 -->
+        <section id="printReportSection" class="hidden print-only bg-white p-6 space-y-6">
+            <div class="border-b-2 border-slate-800 pb-4 flex justify-between items-end">
+                <div>
+                    <h1 class="text-2xl font-bold">房屋驗收缺失統計報表</h1>
+                    <p class="text-sm text-slate-600">產出時間：<span id="reportDate"></span></p>
+                </div>
+                <div class="text-right">
+                    <span class="text-sm text-slate-500">戶別</span>
+                    <p class="text-xl font-bold" id="reportUnit">--</p>
+                </div>
+            </div>
+
+            <!-- 彙總表格 -->
+            <div>
+                <h3 class="font-bold mb-2">一、 各區域缺失統計 Summary</h3>
+                <table class="w-full border-collapse border border-slate-300 text-sm">
+                    <thead>
+                        <tr class="bg-slate-100">
+                            <th class="border border-slate-300 p-2 text-left">分區名稱</th>
+                            <th class="border border-slate-300 p-2 text-center">缺失數量</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportSummaryTable"></tbody>
+                </table>
+            </div>
+
+            <!-- 詳細缺失清單 -->
+            <div>
+                <h3 class="font-bold mb-2">二、 缺失詳細記錄 Detail</h3>
+                <div id="reportDetailCards" class="space-y-4"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 管理戶別 Modal -->
+    <div id="unitModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-lg text-slate-800">戶別管理</h3>
+                <button onclick="closeUnitModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class="bi bi-x-lg"></i></button>
+            </div>
+            
+            <!-- 新增戶別輸入欄 -->
+            <div class="flex gap-2">
+                <input type="text" id="newUnitInput" placeholder="輸入新戶別名稱 (例: C1-10F)" class="flex-1 text-sm border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-amber-400">
+                <button onclick="addNewUnit()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition">新增</button>
+            </div>
+
+            <!-- 已有戶別列表 -->
+            <div class="space-y-2 max-h-60 overflow-y-auto" id="unitListContainer">
+                <!-- JS 動態載入戶別清單 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增缺失 Modal -->
+    <div id="issueModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-lg text-slate-800">新增缺失記錄</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class="bi bi-x-lg"></i></button>
+            </div>
+
+            <form id="issueForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">快速選擇或自訂缺失項目</label>
+                    <select id="presetSelect" onchange="applyPreset(this.value)" class="w-full text-sm border border-slate-300 rounded-lg p-2 mb-2 bg-slate-50 focus:ring-2 focus:ring-amber-400">
+                        <option value="">-- 選擇常見缺失項目 --</option>
+                        <option value="牆面漆面不平整/污染">牆面漆面不平整/污染</option>
+                        <option value="地磚空鼓/破裂">地磚空鼓/破裂</option>
+                        <option value="門窗開關不順/刮傷">門窗開關不順/刮傷</option>
+                        <option value="插座無電源/相位異常">插座無電源/相位異常</option>
+                        <option value="排水不順/積水">排水不順/積水</option>
+                    </select>
+                    <input type="text" id="issueTitle" required placeholder="例如：地磚邊角破損" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-400 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">詳細說明描述</label>
+                    <textarea id="issueDesc" rows="3" placeholder="請詳細說明缺失位置與狀況..." class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-400 outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">現場照片</label>
+                    <input type="file" id="issuePhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100">
+                    <div id="photoPreviewContainer" class="mt-2 hidden">
+                        <img id="photoPreview" class="w-full h-32 object-cover rounded-lg border">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-sm transition">取消</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow transition">儲存缺失</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 腳本邏輯 -->
+    <script>
+        const ZONES = [
+            { id: 'hallway', name: '1. 玄關' },
+            { id: 'living', name: '2. 客廳' },
+            { id: 'master', name: '3. 主臥' },
+            { id: 'bath', name: '4. 浴室' },
+            { id: 'balcony', name: '5. 陽台' }
+        ];
+
+        // 預設平面圖 Placeholders
+        const DEFAULT_PLANS = {
+            hallway: 'https://placehold.co/600x300/e2e8f0/475569?text=1.+Hallway+Plan',
+            living: 'https://placehold.co/600x300/e2e8f0/475569?text=2.+Living+Room+Plan',
+            master: 'https://placehold.co/600x300/e2e8f0/475569?text=3.+Master+Bedroom+Plan',
+            bath: 'https://placehold.co/600x300/e2e8f0/475569?text=4.+Bathroom+Plan',
+            balcony: 'https://placehold.co/600x300/e2e8f0/475569?text=5.+Balcony+Plan'
+        };
+
+        // 初始狀態
+        let units = JSON.parse(localStorage.getItem('inspection_units')) || ['A1-3F', 'A2-5F', 'B1-8F'];
+        let currentUnit = units[0] || 'A1-3F';
+        let currentZoneId = 'hallway';
+        let currentBase64Image = '';
+
+        // 資料結構：
+        // appData: { [unitId]: { [zoneId]: [ {id, title, desc, photo, date} ] } }
+        let appData = JSON.parse(localStorage.getItem('inspection_data')) || {};
+        
+        // 平面圖資料結構：
+        // zonePlans: { [unitId]: { [zoneId]: "base64_image_url" } }
+        let zonePlans = JSON.parse(localStorage.getItem('inspection_plans')) || {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderUnitOptions();
+            renderZoneTabs();
+            switchZone(currentZoneId);
+            updateDashboard();
+
+            document.getElementById('unitSelect').addEventListener('change', (e) => {
+                currentUnit = e.target.value;
+                switchZone(currentZoneId);
+                updateDashboard();
+            });
+
+            document.getElementById('issuePhoto').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        currentBase64Image = evt.target.result;
+                        document.getElementById('photoPreview').src = currentBase64Image;
+                        document.getElementById('photoPreviewContainer').classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            document.getElementById('issueForm').addEventListener('submit', handleSaveIssue);
+        });
+
+        // --- 戶別管理 ---
+
+        function renderUnitOptions() {
+            const select = document.getElementById('unitSelect');
+            select.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
+            select.value = currentUnit;
+        }
+
+        function openUnitModal() {
+            renderUnitManageList();
+            document.getElementById('unitModal').classList.remove('hidden');
+        }
+
+        function closeUnitModal() {
+            document.getElementById('unitModal').classList.add('hidden');
+        }
+
+        function renderUnitManageList() {
+            const container = document.getElementById('unitListContainer');
+            container.innerHTML = units.map(u => `
+                <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <span class="font-bold text-slate-700 text-sm">${u}</span>
+                    <button onclick="deleteUnit('${u}')" class="text-slate-400 hover:text-rose-500 transition px-2">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function addNewUnit() {
+            const input = document.getElementById('newUnitInput');
+            const val = input.value.trim();
+            if (!val) return;
+            if (units.includes(val)) {
+                alert('該戶別名稱已存在');
+                return;
+            }
+            units.push(val);
+            localStorage.setItem('inspection_units', JSON.stringify(units));
+            currentUnit = val;
+            input.value = '';
+            
+            renderUnitOptions();
+            renderUnitManageList();
+            switchZone(currentZoneId);
+            updateDashboard();
+        }
+
+        function deleteUnit(unitName) {
+            if (units.length <= 1) {
+                alert('至少需保留一個戶別');
+                return;
+            }
+            if (!confirm(`確定要刪除戶別 ${unitName} 及其所有資料嗎？`)) return;
+
+            units = units.filter(u => u !== unitName);
+            delete appData[unitName];
+            delete zonePlans[unitName];
+
+            localStorage.setItem('inspection_units', JSON.stringify(units));
+            saveToStorage();
+
+            currentUnit = units[0];
+            renderUnitOptions();
+            renderUnitManageList();
+            switchZone(currentZoneId);
+            updateDashboard();
+        }
+
+        // --- 更換區域平面圖 ---
+
+        function handleUploadPlan(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Img = e.target.result;
+                
+                if (!zonePlans[currentUnit]) zonePlans[currentUnit] = {};
+                zonePlans[currentUnit][currentZoneId] = base64Img;
+
+                localStorage.setItem('inspection_plans', JSON.stringify(zonePlans));
+                
+                // 更新當前畫面上的圖片
+                document.getElementById('zonePlanImg').src = base64Img;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 取得當前區域圖示 (自訂上傳圖優先，無則用預設圖)
+        function getPlanUrl(unit, zoneId) {
+            if (zonePlans[unit] && zonePlans[unit][zoneId]) {
+                return zonePlans[unit][zoneId];
+            }
+            return DEFAULT_PLANS[zoneId] || '';
+        }
+
+        // --- UI & 分區選單 ---
+
+        function renderZoneTabs() {
+            const container = document.getElementById('zoneTabs');
+            container.innerHTML = ZONES.map(zone => `
+                <button onclick="switchZone('${zone.id}')" id="tab-${zone.id}" 
+                        class="px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition border ${
+                            zone.id === currentZoneId 
+                            ? 'bg-slate-800 text-white border-slate-800 shadow-sm' 
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }">
+                    ${zone.name}
+                </button>
+            `).join('');
+        }
+
+        function switchZone(zoneId) {
+            currentZoneId = zoneId;
+            const targetZone = ZONES.find(z => z.id === zoneId);
+
+            document.getElementById('currentZoneTitle').innerText = targetZone.name;
+            document.getElementById('zonePlanImg').src = getPlanUrl(currentUnit, zoneId);
+
+            ZONES.forEach(z => {
+                const btn = document.getElementById(`tab-${z.id}`);
+                if (btn) {
+                    btn.className = z.id === zoneId 
+                        ? 'px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition border bg-slate-800 text-white border-slate-800 shadow-sm' 
+                        : 'px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition border bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+                }
+            });
+
+            renderIssueList();
+        }
+
+        function updateDashboard() {
+            document.getElementById('currentUnitTitle').innerText = currentUnit;
+            const unitData = appData[currentUnit] || {};
+            
+            let total = 0;
+            const cardsContainer = document.getElementById('zoneOverviewCards');
+
+            cardsContainer.innerHTML = ZONES.map(zone => {
+                const count = (unitData[zone.id] || []).length;
+                total += count;
+
+                return `
+                    <div onclick="switchZone('${zone.id}')" class="p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:border-amber-400 hover:bg-amber-50/30 transition text-center">
+                        <div class="text-xs font-semibold text-slate-500 truncate">${zone.name}</div>
+                        <div class="text-lg font-black ${count > 0 ? 'text-amber-600' : 'text-slate-400'}">${count}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('totalIssuesCount').innerText = total;
+        }
+
+        function renderIssueList() {
+            const listContainer = document.getElementById('issueList');
+            const issues = (appData[currentUnit] && appData[currentUnit][currentZoneId]) || [];
+
+            if (issues.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 text-slate-400">
+                        <i class="bi bi-check-circle text-3xl text-emerald-400 block mb-2"></i>
+                        <p class="text-sm">此區域目前無缺失紀錄</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listContainer.innerHTML = issues.map(issue => `
+                <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex gap-4 items-start relative">
+                    ${issue.photo ? `<img src="${issue.photo}" class="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border flex-shrink-0">` : ''}
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start pr-6">
+                            <h4 class="font-bold text-slate-800 text-base truncate">${issue.title}</h4>
+                        </div>
+                        <p class="text-slate-600 text-sm mt-1 leading-relaxed">${issue.desc || '無詳細說明'}</p>
+                        <span class="text-[10px] text-slate-400 mt-2 block">${issue.date}</span>
+                    </div>
+                    <button onclick="deleteIssue('${issue.id}')" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 transition">
+                        <i class="bi bi-trash text-lg"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // --- 缺失記錄處理 ---
+
+        function handleSaveIssue(e) {
+            e.preventDefault();
+            const title = document.getElementById('issueTitle').value;
+            const desc = document.getElementById('issueDesc').value;
+
+            const newIssue = {
+                id: Date.now().toString(),
+                title: title,
+                desc: desc,
+                photo: currentBase64Image,
+                date: new Date().toLocaleString('zh-TW', { hour12: false })
+            };
+
+            if (!appData[currentUnit]) appData[currentUnit] = {};
+            if (!appData[currentUnit][currentZoneId]) appData[currentUnit][currentZoneId] = [];
+
+            appData[currentUnit][currentZoneId].push(newIssue);
+            saveToStorage();
+
+            closeModal();
+            updateDashboard();
+            renderIssueList();
+        }
+
+        function deleteIssue(issueId) {
+            if (!confirm('確定要刪除這筆缺失紀錄嗎？')) return;
+            
+            if (appData[currentUnit] && appData[currentUnit][currentZoneId]) {
+                appData[currentUnit][currentZoneId] = appData[currentUnit][currentZoneId].filter(item => item.id !== issueId);
+                saveToStorage();
+                updateDashboard();
+                renderIssueList();
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('inspection_data', JSON.stringify(appData));
+        }
+
+        function openModal() {
+            document.getElementById('issueForm').reset();
+            currentBase64Image = '';
+            document.getElementById('photoPreviewContainer').classList.add('hidden');
+            document.getElementById('issueModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('issueModal').classList.add('hidden');
+        }
+
+        function applyPreset(val) {
+            if (val) document.getElementById('issueTitle').value = val;
+        }
+
+        // --- 報表產出 ---
+
+        function generateReport() {
+            const unitData = appData[currentUnit] || {};
+            document.getElementById('reportUnit').innerText = currentUnit;
+            document.getElementById('reportDate').innerText = new Date().toLocaleDateString('zh-TW');
+
+            const summaryTable = document.getElementById('reportSummaryTable');
+            summaryTable.innerHTML = ZONES.map(z => {
+                const count = (unitData[z.id] || []).length;
+                return `
+                    <tr>
+                        <td class="border border-slate-300 p-2">${z.name}</td>
+                        <td class="border border-slate-300 p-2 text-center font-bold">${count}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const detailContainer = document.getElementById('reportDetailCards');
+            let hasData = false;
+            let detailHtml = '';
+
+            ZONES.forEach(z => {
+                const issues = unitData[z.id] || [];
+                if (issues.length > 0) {
+                    hasData = true;
+                    detailHtml += `<div class="font-bold text-slate-700 border-b pb-1 mt-4">${z.name}</div>`;
+                    issues.forEach((issue, index) => {
+                        detailHtml += `
+                            <div class="flex gap-4 border-b border-slate-100 py-2">
+                                <div class="w-6 text-slate-400 font-bold">${index + 1}.</div>
+                                ${issue.photo ? `<img src="${issue.photo}" class="w-16 h-16 object-cover rounded">` : ''}
+                                <div class="flex-1">
+                                    <div class="font-bold text-slate-800">${issue.title}</div>
+                                    <div class="text-xs text-slate-600">${issue.desc || '無描述'}</div>
+                                    <div class="text-[10px] text-slate-400 mt-1">${issue.date}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            });
+
+            if (!hasData) {
+                detailHtml = '<p class="text-sm text-slate-500 italic">無任何缺失資料。</p>';
+            }
+
+            detailContainer.innerHTML = detailHtml;
+            window.print();
+        }
+    </script>
+</body>
+</html>
