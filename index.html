@@ -228,7 +228,7 @@
         };
 
         // 貼上你的 Apps Script 部署網址
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxzfYSu-Ygc9gp8Nes8a95lcgZ6Kut8rTcwY3O4qhFOvTq-NkaiwJraLH5q5cm-IFwx/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwzkOKS5DAE_wC6z3b_LxxVEjZSiVams7a3bGeL6QLenW1mW85-sEGnvOyBv4sZuWUy/exec";
         
         let units = JSON.parse(localStorage.getItem('inspection_units')) || ['A1-3F', 'A2-5F', 'B1-8F'];
         let currentUnit = units[0] || 'A1-3F';
@@ -481,11 +481,12 @@
             if (GAS_URL) {
                 try {
                     const payload = {
+                        id: newIssue.id,
                         unit: currentUnit,
                         zone: zoneName,
                         title: title,
                         desc: desc,
-                        photo: currentBase64Image,
+                        photoBase64: currentBase64Image,
                         date: dateStr
                     };
 
