@@ -202,7 +202,7 @@
 
                 <div class="flex gap-2 pt-2">
                     <button type="button" onclick="closeModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-sm transition">取消</button>
-                    <button type="submit" class="w-1/2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow transition">儲存缺失</button>
+                    <button type="submit" id="saveBtn" class="w-1/2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow transition">儲存缺失</button>
                 </div>
             </form>
         </div>
@@ -227,18 +227,15 @@
             balcony: 'https://placehold.co/600x300/e2e8f0/475569?text=5.+Balcony+Plan'
         };
 
-        // 初始狀態
+        // 貼上你的 Apps Script 部署網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxzfYSu-Ygc9gp8Nes8a95lcgZ6Kut8rTcwY3O4qhFOvTq-NkaiwJraLH5q5cm-IFwx/exec";
+        
         let units = JSON.parse(localStorage.getItem('inspection_units')) || ['A1-3F', 'A2-5F', 'B1-8F'];
         let currentUnit = units[0] || 'A1-3F';
         let currentZoneId = 'hallway';
         let currentBase64Image = '';
 
-        // 資料結構：
-        // appData: { [unitId]: { [zoneId]: [ {id, title, desc, photo, date} ] } }
         let appData = JSON.parse(localStorage.getItem('inspection_data')) || {};
-        
-        // 平面圖資料結構：
-        // zonePlans: { [unitId]: { [zoneId]: "base64_image_url" } }
         let zonePlans = JSON.parse(localStorage.getItem('inspection_plans')) || {};
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -352,14 +349,11 @@
                 zonePlans[currentUnit][currentZoneId] = base64Img;
 
                 localStorage.setItem('inspection_plans', JSON.stringify(zonePlans));
-                
-                // 更新當前畫面上的圖片
                 document.getElementById('zonePlanImg').src = base64Img;
             };
             reader.readAsDataURL(file);
         }
 
-        // 取得當前區域圖示 (自訂上傳圖優先，無則用預設圖)
         function getPlanUrl(unit, zoneId) {
             if (zonePlans[unit] && zonePlans[unit][zoneId]) {
                 return zonePlans[unit][zoneId];
@@ -455,26 +449,60 @@
             `).join('');
         }
 
-        // --- 缺失記錄處理 ---
+        // --- 缺失記錄處理 (同步 GAS) ---
 
-        function handleSaveIssue(e) {
+        async function handleSaveIssue(e) {
             e.preventDefault();
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerText = '儲存中...';
+
             const title = document.getElementById('issueTitle').value;
             const desc = document.getElementById('issueDesc').value;
+            const zoneName = ZONES.find(z => z.id === currentZoneId)?.name || currentZoneId;
+            const dateStr = new Date().toLocaleString('zh-TW', { hour12: false });
 
             const newIssue = {
                 id: Date.now().toString(),
                 title: title,
                 desc: desc,
                 photo: currentBase64Image,
-                date: new Date().toLocaleString('zh-TW', { hour12: false })
+                date: dateStr
             };
 
+            // 1. 本地 LocalStorage 儲存
             if (!appData[currentUnit]) appData[currentUnit] = {};
             if (!appData[currentUnit][currentZoneId]) appData[currentUnit][currentZoneId] = [];
 
             appData[currentUnit][currentZoneId].push(newIssue);
             saveToStorage();
+
+            // 2. 傳送到 Google Apps Script 寫入 Google Sheet
+            if (GAS_URL) {
+                try {
+                    const payload = {
+                        unit: currentUnit,
+                        zone: zoneName,
+                        title: title,
+                        desc: desc,
+                        photo: currentBase64Image,
+                        date: dateStr
+                    };
+
+                    await fetch(GAS_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // 解決跨網域 CORS 問題
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (error) {
+                    console.error('上傳至 Google Sheets 失敗：', error);
+                }
+            }
+
+            // 重置按鈕狀態與 Modal
+            saveBtn.disabled = false;
+            saveBtn.innerText = '儲存缺失';
 
             closeModal();
             updateDashboard();
