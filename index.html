@@ -26,11 +26,15 @@
                 工程驗收紀錄
             </h1>
             
-            <!-- 戶別選擇與管理 -->
             <div class="flex items-center gap-2">
+                <!-- 雲端同步按鈕 -->
+                <button onclick="fetchCloudData()" id="syncBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-2.5 py-1.5 rounded-lg border border-indigo-500 transition flex items-center gap-1 shadow-sm">
+                    <i class="bi bi-cloud-arrow-down-fill"></i> 同步雲端
+                </button>
+
+                <!-- 戶別選擇與管理 -->
                 <label for="unitSelect" class="text-xs text-slate-300">戶別：</label>
                 <select id="unitSelect" class="bg-slate-700 text-white text-sm font-semibold rounded-lg px-3 py-1.5 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-400">
-                    <!-- 動態渲染戶別 -->
                 </select>
                 <button onclick="openUnitModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg border border-slate-600 transition flex items-center gap-1">
                     <i class="bi bi-gear-fill"></i> 管理戶別
@@ -41,7 +45,13 @@
 
     <main class="max-w-4xl mx-auto p-4 space-y-6">
 
-        <!-- Dashboard 統計面板 (螢幕顯示) -->
+        <!-- 雲端同步狀態提示條 -->
+        <div id="loadingStatus" class="hidden bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-2 rounded-xl flex items-center gap-2 no-print">
+            <span class="animate-spin text-amber-600"><i class="bi bi-arrow-repeat"></i></span>
+            <span>正在與 Google 試算表同步資料中...</span>
+        </div>
+
+        <!-- Dashboard 統計面板 -->
         <section class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 no-print">
             <div class="flex justify-between items-center mb-4">
                 <div>
@@ -54,20 +64,13 @@
                 </div>
             </div>
 
-            <!-- 區域快速跳轉卡片區 -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5" id="zoneOverviewCards">
-                <!-- JS 動態渲染區域統計卡片 -->
-            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5" id="zoneOverviewCards"></div>
         </section>
 
         <!-- 區域分頁籤 & 操作區 -->
         <section class="no-print space-y-4">
-            <!-- 區域切換 Tab -->
-            <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-none" id="zoneTabs">
-                <!-- JS 動態渲染頁籤 -->
-            </div>
+            <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-none" id="zoneTabs"></div>
 
-            <!-- 平面圖與新增按鈕 -->
             <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-4">
                 <div class="flex justify-between items-center flex-wrap gap-2">
                     <h3 class="font-bold text-slate-700 flex items-center gap-2">
@@ -75,7 +78,6 @@
                         <span id="currentZoneTitle">玄關</span> 平面圖
                     </h3>
                     <div class="flex items-center gap-2">
-                        <!-- 上傳/更換平面圖按鈕 -->
                         <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1">
                             <i class="bi bi-image"></i> 更換平面圖
                             <input type="file" id="uploadPlanInput" accept="image/*" class="hidden" onchange="handleUploadPlan(event)">
@@ -86,7 +88,6 @@
                     </div>
                 </div>
                 
-                <!-- 平面參考圖區塊 -->
                 <div class="relative w-full h-52 sm:h-64 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
                     <img id="zonePlanImg" src="" alt="平面圖" class="w-full h-full object-contain">
                     <span class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">區域圖示</span>
@@ -103,12 +104,10 @@
                 </button>
             </div>
 
-            <div id="issueList" class="space-y-3">
-                <!-- JS 動態渲染缺失卡片 -->
-            </div>
+            <div id="issueList" class="space-y-3"></div>
         </section>
 
-        <!-- 列印 / 匯出專用報表視圖 -->
+        <!-- 列印報表專用區塊 -->
         <section id="printReportSection" class="hidden print-only bg-white p-6 space-y-6">
             <div class="border-b-2 border-slate-800 pb-4 flex justify-between items-end">
                 <div>
@@ -121,7 +120,6 @@
                 </div>
             </div>
 
-            <!-- 彙總表格 -->
             <div>
                 <h3 class="font-bold mb-2">一、 各區域缺失統計 Summary</h3>
                 <table class="w-full border-collapse border border-slate-300 text-sm">
@@ -135,7 +133,6 @@
                 </table>
             </div>
 
-            <!-- 詳細缺失清單 -->
             <div>
                 <h3 class="font-bold mb-2">二、 缺失詳細記錄 Detail</h3>
                 <div id="reportDetailCards" class="space-y-4"></div>
@@ -152,16 +149,12 @@
                 <button onclick="closeUnitModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class="bi bi-x-lg"></i></button>
             </div>
             
-            <!-- 新增戶別輸入欄 -->
             <div class="flex gap-2">
                 <input type="text" id="newUnitInput" placeholder="輸入新戶別名稱 (例: C1-10F)" class="flex-1 text-sm border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-amber-400">
                 <button onclick="addNewUnit()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition">新增</button>
             </div>
 
-            <!-- 已有戶別列表 -->
-            <div class="space-y-2 max-h-60 overflow-y-auto" id="unitListContainer">
-                <!-- JS 動態載入戶別清單 -->
-            </div>
+            <div class="space-y-2 max-h-60 overflow-y-auto" id="unitListContainer"></div>
         </div>
     </div>
 
@@ -218,7 +211,6 @@
             { id: 'balcony', name: '5. 陽台' }
         ];
 
-        // 預設平面圖 Placeholders
         const DEFAULT_PLANS = {
             hallway: 'https://placehold.co/600x300/e2e8f0/475569?text=1.+Hallway+Plan',
             living: 'https://placehold.co/600x300/e2e8f0/475569?text=2.+Living+Room+Plan',
@@ -227,8 +219,8 @@
             balcony: 'https://placehold.co/600x300/e2e8f0/475569?text=5.+Balcony+Plan'
         };
 
-        // 貼上你的 Apps Script 部署網址
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwzkOKS5DAE_wC6z3b_LxxVEjZSiVams7a3bGeL6QLenW1mW85-sEGnvOyBv4sZuWUy/exec";
+        // 更新為你最新的 Google Apps Script Web App URL
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwGk38FGNSynuUNMEvl56aCtFMO43k5I2X-TS61HBbeC7iDABUnt_h4QhoYM4XBZO6g/exec";
         
         let units = JSON.parse(localStorage.getItem('inspection_units')) || ['A1-3F', 'A2-5F', 'B1-8F'];
         let currentUnit = units[0] || 'A1-3F';
@@ -244,6 +236,9 @@
             switchZone(currentZoneId);
             updateDashboard();
 
+            // 啟動時自動拉取試算表資料
+            fetchCloudData();
+
             document.getElementById('unitSelect').addEventListener('change', (e) => {
                 currentUnit = e.target.value;
                 switchZone(currentZoneId);
@@ -255,9 +250,28 @@
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = function(evt) {
-                        currentBase64Image = evt.target.result;
-                        document.getElementById('photoPreview').src = currentBase64Image;
-                        document.getElementById('photoPreviewContainer').classList.remove('hidden');
+                        const img = new Image();
+                        img.src = evt.target.result;
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 800;
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                            canvas.width = width;
+                            canvas.height = height;
+
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            currentBase64Image = canvas.toDataURL('image/jpeg', 0.6);
+                            document.getElementById('photoPreview').src = currentBase64Image;
+                            document.getElementById('photoPreviewContainer').classList.remove('hidden');
+                        };
                     };
                     reader.readAsDataURL(file);
                 }
@@ -266,8 +280,55 @@
             document.getElementById('issueForm').addEventListener('submit', handleSaveIssue);
         });
 
-        // --- 戶別管理 ---
+        // --- 從 Google 試算表同步資料 (GET) ---
+        async function fetchCloudData() {
+            if (!GAS_URL) return;
+            const statusBox = document.getElementById('loadingStatus');
+            if (statusBox) statusBox.classList.remove('hidden');
 
+            try {
+                const res = await fetch(GAS_URL);
+                if (res.ok) {
+                    const cloudList = await res.json();
+                    
+                    const newAppData = {};
+                    cloudList.forEach(item => {
+                        const unit = item.unit;
+                        const zoneObj = ZONES.find(z => z.name === item.zone || z.id === item.zone);
+                        const zoneId = zoneObj ? zoneObj.id : 'hallway';
+
+                        if (!newAppData[unit]) newAppData[unit] = {};
+                        if (!newAppData[unit][zoneId]) newAppData[unit][zoneId] = [];
+
+                        if (!newAppData[unit][zoneId].some(i => i.id === item.id)) {
+                            newAppData[unit][zoneId].push({
+                                id: item.id,
+                                title: item.title,
+                                desc: item.desc,
+                                photo: item.photo,
+                                date: item.date
+                            });
+                        }
+
+                        if (!units.includes(unit)) {
+                            units.push(unit);
+                        }
+                    });
+
+                    appData = newAppData;
+                    saveToStorage();
+                    renderUnitOptions();
+                    switchZone(currentZoneId);
+                    updateDashboard();
+                }
+            } catch (err) {
+                console.error("雲端同步失敗: ", err);
+            } finally {
+                if (statusBox) statusBox.classList.add('hidden');
+            }
+        }
+
+        // --- 戶別管理 ---
         function renderUnitOptions() {
             const select = document.getElementById('unitSelect');
             select.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
@@ -335,8 +396,7 @@
             updateDashboard();
         }
 
-        // --- 更換區域平面圖 ---
-
+        // --- 平面圖管理 ---
         function handleUploadPlan(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -344,7 +404,6 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 const base64Img = e.target.result;
-                
                 if (!zonePlans[currentUnit]) zonePlans[currentUnit] = {};
                 zonePlans[currentUnit][currentZoneId] = base64Img;
 
@@ -361,8 +420,7 @@
             return DEFAULT_PLANS[zoneId] || '';
         }
 
-        // --- UI & 分區選單 ---
-
+        // --- UI 選單與 Dashboard ---
         function renderZoneTabs() {
             const container = document.getElementById('zoneTabs');
             container.innerHTML = ZONES.map(zone => `
@@ -449,8 +507,7 @@
             `).join('');
         }
 
-        // --- 缺失記錄處理 (同步 GAS) ---
-
+        // --- 儲存缺失紀錄 (POST) ---
         async function handleSaveIssue(e) {
             e.preventDefault();
             const saveBtn = document.getElementById('saveBtn');
@@ -477,7 +534,7 @@
             appData[currentUnit][currentZoneId].push(newIssue);
             saveToStorage();
 
-            // 2. 傳送到 Google Apps Script 寫入 Google Sheet
+            // 2. 傳送到 Google Apps Script
             if (GAS_URL) {
                 try {
                     const payload = {
@@ -492,7 +549,7 @@
 
                     await fetch(GAS_URL, {
                         method: 'POST',
-                        mode: 'no-cors', // 解決跨網域 CORS 問題
+                        mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
@@ -501,7 +558,6 @@
                 }
             }
 
-            // 重置按鈕狀態與 Modal
             saveBtn.disabled = false;
             saveBtn.innerText = '儲存缺失';
 
@@ -523,6 +579,7 @@
 
         function saveToStorage() {
             localStorage.setItem('inspection_data', JSON.stringify(appData));
+            localStorage.setItem('inspection_units', JSON.stringify(units));
         }
 
         function openModal() {
@@ -541,7 +598,6 @@
         }
 
         // --- 報表產出 ---
-
         function generateReport() {
             const unitData = appData[currentUnit] || {};
             document.getElementById('reportUnit').innerText = currentUnit;
