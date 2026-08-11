@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>工程驗收分區記錄系統</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -13,41 +13,36 @@
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             body { background: white; color: black; }
-            .page-break { page-break-after: always; }
         }
-        .print-only { display: none; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen font-sans">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
 
-    <!-- 頂部導覽列 -->
-    <header class="bg-slate-900 text-white shadow-md no-print sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <i class="bi bi-building-check text-2xl text-emerald-400"></i>
-                <h1 class="text-xl font-bold tracking-wide">工程驗收分區記錄系統</h1>
-            </div>
-            <div class="flex items-center space-x-3">
-                <!-- 戶別切換下拉選單 -->
-                <div class="relative">
-                    <select id="unitSelect" onchange="switchUnit(this.value)" class="bg-slate-800 text-white border border-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 pr-8 font-medium">
-                        <!-- JS 動態渲染戶別 -->
-                    </select>
-                </div>
-                <button onclick="openUnitModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-1 transition">
-                    <i class="bi bi-gear"></i> 管理戶別
-                </button>
-                <button onclick="generateReport()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm px-3 py-2 rounded-lg font-medium flex items-center gap-1 transition shadow-sm">
-                    <i class="bi bi-printer"></i> 產生報表
+    <!-- 頂端導航列 -->
+    <header class="bg-slate-800 text-white p-4 shadow-md sticky top-0 z-30 no-print">
+        <div class="max-w-4xl mx-auto flex justify-between items-center flex-wrap gap-2">
+            <h1 class="text-lg font-bold flex items-center gap-2">
+                <i class="bi bi-clipboard-check text-amber-400 text-xl"></i>
+                工程驗收紀錄
+            </h1>
+            
+            <!-- 戶別選擇與管理 -->
+            <div class="flex items-center gap-2">
+                <label for="unitSelect" class="text-xs text-slate-300">戶別：</label>
+                <select id="unitSelect" class="bg-slate-700 text-white text-sm font-semibold rounded-lg px-3 py-1.5 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    <!-- 動態渲染戶別 -->
+                </select>
+                <button onclick="openUnitModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg border border-slate-600 transition flex items-center gap-1">
+                    <i class="bi bi-gear-fill"></i> 管理戶別
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
 
-        <!-- 儀表板 Overview -->
-        <section class="no-print">
+        <!-- Dashboard 統計面板 (螢幕顯示) -->
+        <section class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 no-print">
             <div class="flex justify-between items-center mb-4">
                 <div>
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-400">當前戶別概況</span>
@@ -72,388 +67,213 @@
                 <!-- JS 動態渲染頁籤 -->
             </div>
 
-            <!-- 當前區域主要內容面板 -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 space-y-6">
-                <!-- 區域標題與按鈕 -->
-                <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+            <!-- 平面圖與新增按鈕 -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center flex-wrap gap-2">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                        <i class="bi bi-geo-alt-fill text-indigo-500"></i>
+                        <span id="currentZoneTitle">玄關</span> 平面圖
+                    </h3>
                     <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
-                        <h3 class="text-lg font-bold text-slate-800" id="currentZoneName">--</h3>
-                        <span id="zoneIssueBadge" class="bg-rose-100 text-rose-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">0 缺失</span>
+                        <!-- 上傳/更換平面圖按鈕 -->
+                        <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1">
+                            <i class="bi bi-image"></i> 更換平面圖
+                            <input type="file" id="uploadPlanInput" accept="image/*" class="hidden" onchange="handleUploadPlan(event)">
+                        </label>
+                        <button onclick="openModal()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-sm px-4 py-2 rounded-xl shadow-md transition flex items-center gap-1.5">
+                            <i class="bi bi-plus-lg"></i> 新增缺失
+                        </button>
                     </div>
-                    <button onclick="openAddModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition shadow-sm">
-                        <i class="bi bi-plus-lg"></i> 新增缺失
-                    </button>
                 </div>
-
-                <!-- 缺失項目清單 -->
-                <div id="issueList" class="space-y-3">
-                    <!-- JS 動態渲染缺失卡片 -->
+                
+                <!-- 平面參考圖區塊 -->
+                <div class="relative w-full h-52 sm:h-64 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
+                    <img id="zonePlanImg" src="" alt="平面圖" class="w-full h-full object-contain">
+                    <span class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">區域圖示</span>
                 </div>
             </div>
         </section>
 
-        <!-- 列印報表專用區塊 (Print Only) -->
-        <section id="printReportSection" class="print-only space-y-6 bg-white p-8">
-            <div class="border-b-2 border-slate-900 pb-4 flex justify-between items-end">
+        <!-- 缺失列表區 -->
+        <section class="no-print space-y-3">
+            <div class="flex justify-between items-center px-1">
+                <h3 class="font-bold text-slate-700 text-base">缺失項目明細</h3>
+                <button onclick="generateReport()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                    <i class="bi bi-file-earmark-text"></i> 產生統計報表
+                </button>
+            </div>
+
+            <div id="issueList" class="space-y-3">
+                <!-- JS 動態渲染缺失卡片 -->
+            </div>
+        </section>
+
+        <!-- 列印 / 匯出專用報表視圖 -->
+        <section id="printReportSection" class="hidden print-only bg-white p-6 space-y-6">
+            <div class="border-b-2 border-slate-800 pb-4 flex justify-between items-end">
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-900">工程驗收缺失紀錄表</h1>
-                    <p class="text-sm text-slate-600">戶別：<span id="printUnitName" class="font-bold text-slate-900"></span></p>
+                    <h1 class="text-2xl font-bold">房屋驗收缺失統計報表</h1>
+                    <p class="text-sm text-slate-600">產出時間：<span id="reportDate"></span></p>
                 </div>
-                <div class="text-right text-xs text-slate-500">
-                    <p>列印日期：<span id="printDate"></span></p>
+                <div class="text-right">
+                    <span class="text-sm text-slate-500">戶別</span>
+                    <p class="text-xl font-bold" id="reportUnit">--</p>
                 </div>
             </div>
-            
-            <div id="printContent" class="space-y-6">
-                <!-- JS 動態渲染列印內容 -->
+
+            <!-- 彙總表格 -->
+            <div>
+                <h3 class="font-bold mb-2">一、 各區域缺失統計 Summary</h3>
+                <table class="w-full border-collapse border border-slate-300 text-sm">
+                    <thead>
+                        <tr class="bg-slate-100">
+                            <th class="border border-slate-300 p-2 text-left">分區名稱</th>
+                            <th class="border border-slate-300 p-2 text-center">缺失數量</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportSummaryTable"></tbody>
+                </table>
+            </div>
+
+            <!-- 詳細缺失清單 -->
+            <div>
+                <h3 class="font-bold mb-2">二、 缺失詳細記錄 Detail</h3>
+                <div id="reportDetailCards" class="space-y-4"></div>
             </div>
         </section>
 
     </main>
 
-    <!-- 新增 / 編輯缺失 Modal -->
-    <div id="issueModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
-            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-slate-800" id="modalTitle">新增缺失項目</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
-                    <i class="bi bi-x-lg text-lg"></i>
-                </button>
+    <!-- 管理戶別 Modal -->
+    <div id="unitModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-lg text-slate-800">戶別管理</h3>
+                <button onclick="closeUnitModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class="bi bi-x-lg"></i></button>
             </div>
             
-            <div class="p-5 overflow-y-auto space-y-4">
-                <form id="issueForm" onsubmit="handleSaveIssue(event)" class="space-y-4">
-                    <input type="hidden" id="issueId">
-                    
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">常見缺失快速填寫</label>
-                        <select onchange="applyPreset(this.value)" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl p-2.5 text-slate-700">
-                            <option value="">-- 選擇常用模板 --</option>
-                            <option value="油漆刮傷 / 污損">油漆刮傷 / 污損</option>
-                            <option value="牆面裂縫 / 空鼓">牆面裂縫 / 空鼓</option>
-                            <option value="地磚空心 / 破損">地磚空心 / 破損</option>
-                            <option value="門窗開合不順 / 異音">門窗開合不順 / 異音</option>
-                            <option value="矽利康填縫不實">矽利康填縫不實</option>
-                            <option value="排水不順 / 積水">排水不順 / 積水</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">缺失標題 <span class="text-rose-500">*</span></label>
-                        <input type="text" id="issueTitle" required class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">詳細說明</label>
-                        <textarea id="issueDesc" rows="3" class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="輸入具體位置或缺失細節..."></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">現場照片</label>
-                        <input type="file" id="issuePhoto" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-                        <div id="photoPreviewContainer" class="mt-2 hidden relative rounded-xl overflow-hidden border border-slate-200">
-                            <img id="photoPreview" src="" class="w-full h-48 object-cover">
-                            <button type="button" onclick="removePhoto()" class="absolute top-2 right-2 bg-slate-900/70 text-white rounded-full p-1 w-7 h-7 flex items-center justify-center hover:bg-slate-900">
-                                <i class="bi bi-x"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3 pt-2">
-                        <button type="button" onclick="closeModal()" class="w-1/2 py-2.5 border border-slate-200 rounded-xl text-slate-600 text-sm font-medium hover:bg-slate-50">取消</button>
-                        <button type="submit" class="w-1/2 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-500 shadow-sm">儲存缺失</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- 戶別管理 Modal -->
-    <div id="unitModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-5 space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-bold text-slate-800">戶別管理</h3>
-                <button onclick="closeUnitModal()" class="text-slate-400 hover:text-slate-600">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-
+            <!-- 新增戶別輸入欄 -->
             <div class="flex gap-2">
-                <input type="text" id="newUnitName" placeholder="輸入新戶別名稱 (例: A棟12F)" class="flex-1 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                <button onclick="addUnit()" class="bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition">新增</button>
+                <input type="text" id="newUnitInput" placeholder="輸入新戶別名稱 (例: C1-10F)" class="flex-1 text-sm border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-amber-400">
+                <button onclick="addNewUnit()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition">新增</button>
             </div>
 
-            <div class="space-y-2 max-h-60 overflow-y-auto" id="unitManageList">
-                <!-- JS 動態渲染戶別列表 -->
+            <!-- 已有戶別列表 -->
+            <div class="space-y-2 max-h-60 overflow-y-auto" id="unitListContainer">
+                <!-- JS 動態載入戶別清單 -->
             </div>
         </div>
     </div>
 
-    <!-- JavaScript 邏輯處理 -->
+    <!-- 新增缺失 Modal -->
+    <div id="issueModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-lg text-slate-800">新增缺失記錄</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class="bi bi-x-lg"></i></button>
+            </div>
+
+            <form id="issueForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">快速選擇或自訂缺失項目</label>
+                    <select id="presetSelect" onchange="applyPreset(this.value)" class="w-full text-sm border border-slate-300 rounded-lg p-2 mb-2 bg-slate-50 focus:ring-2 focus:ring-amber-400">
+                        <option value="">-- 選擇常見缺失項目 --</option>
+                        <option value="牆面漆面不平整/污染">牆面漆面不平整/污染</option>
+                        <option value="地磚空鼓/破裂">地磚空鼓/破裂</option>
+                        <option value="門窗開關不順/刮傷">門窗開關不順/刮傷</option>
+                        <option value="插座無電源/相位異常">插座無電源/相位異常</option>
+                        <option value="排水不順/積水">排水不順/積水</option>
+                    </select>
+                    <input type="text" id="issueTitle" required placeholder="例如：地磚邊角破損" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-400 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">詳細說明描述</label>
+                    <textarea id="issueDesc" rows="3" placeholder="請詳細說明缺失位置與狀況..." class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-400 outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">現場照片</label>
+                    <input type="file" id="issuePhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100">
+                    <div id="photoPreviewContainer" class="mt-2 hidden">
+                        <img id="photoPreview" class="w-full h-32 object-cover rounded-lg border">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-sm transition">取消</button>
+                    <button type="submit" id="saveBtn" class="w-1/2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow transition">儲存缺失</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 腳本邏輯 -->
     <script>
-        // 常數設定與基礎資料結構
         const ZONES = [
-            { id: 'living', name: '客廳' },
-            { id: 'master_bedroom', name: '主臥室' },
-            { id: 'bedroom', name: '次臥室' },
-            { id: 'kitchen', name: '廚房' },
-            { id: 'bathroom', name: '主衛浴' },
-            { id: 'guest_bathroom', name: '客衛浴' },
-            { id: 'balcony', name: '陽台' },
-            { id: 'entrance', name: '玄關' }
+            { id: 'hallway', name: '1. 玄關' },
+            { id: 'living', name: '2. 客廳' },
+            { id: 'master', name: '3. 主臥' },
+            { id: 'bath', name: '4. 浴室' },
+            { id: 'balcony', name: '5. 陽台' }
         ];
 
-        let units = JSON.parse(localStorage.getItem('inspection_units')) || ['A棟10F', 'B棟5F'];
-        let currentUnit = units[0];
-        let currentZoneId = ZONES[0].id;
-        let appData = JSON.parse(localStorage.getItem('inspection_data')) || {};
-        let zonePlans = JSON.parse(localStorage.getItem('inspection_plans')) || {};
+        // 預設平面圖 Placeholders
+        const DEFAULT_PLANS = {
+            hallway: 'https://placehold.co/600x300/e2e8f0/475569?text=1.+Hallway+Plan',
+            living: 'https://placehold.co/600x300/e2e8f0/475569?text=2.+Living+Room+Plan',
+            master: 'https://placehold.co/600x300/e2e8f0/475569?text=3.+Master+Bedroom+Plan',
+            bath: 'https://placehold.co/600x300/e2e8f0/475569?text=4.+Bathroom+Plan',
+            balcony: 'https://placehold.co/600x300/e2e8f0/475569?text=5.+Balcony+Plan'
+        };
+
+        // 貼上你的 Apps Script 部署網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwzkOKS5DAE_wC6z3b_LxxVEjZSiVams7a3bGeL6QLenW1mW85-sEGnvOyBv4sZuWUy/exec";
+        
+        let units = JSON.parse(localStorage.getItem('inspection_units')) || ['A1-3F', 'A2-5F', 'B1-8F'];
+        let currentUnit = units[0] || 'A1-3F';
+        let currentZoneId = 'hallway';
         let currentBase64Image = '';
 
-        // 初始化
+        let appData = JSON.parse(localStorage.getItem('inspection_data')) || {};
+        let zonePlans = JSON.parse(localStorage.getItem('inspection_plans')) || {};
+
         document.addEventListener('DOMContentLoaded', () => {
-            initDataStructure();
             renderUnitOptions();
             renderZoneTabs();
             switchZone(currentZoneId);
             updateDashboard();
-            setupPhotoUploadHandler();
-        });
 
-        // 資料初始化防呆
-        function initDataStructure() {
-            units.forEach(unit => {
-                if (!appData[unit]) appData[unit] = {};
-                ZONES.forEach(zone => {
-                    if (!appData[unit][zone.id]) appData[unit][zone.id] = [];
-                });
+            document.getElementById('unitSelect').addEventListener('change', (e) => {
+                currentUnit = e.target.value;
+                switchZone(currentZoneId);
+                updateDashboard();
             });
-            saveToStorage();
-        }
 
-        function saveToStorage() {
-            localStorage.setItem('inspection_data', JSON.stringify(appData));
-            localStorage.setItem('inspection_units', JSON.stringify(units));
-            localStorage.setItem('inspection_plans', JSON.stringify(zonePlans));
-        }
-
-        // 渲染戶別選項
-        function renderUnitOptions() {
-            const select = document.getElementById('unitSelect');
-            select.innerHTML = units.map(u => `<option value="${u}" ${u === currentUnit ? 'selected' : ''}>${u}</option>`).join('');
-            document.getElementById('currentUnitTitle').innerText = currentUnit;
-        }
-
-        function switchUnit(unitName) {
-            currentUnit = unitName;
-            document.getElementById('currentUnitTitle').innerText = currentUnit;
-            switchZone(currentZoneId);
-            updateDashboard();
-        }
-
-        // 渲染區域 Tab
-        function renderZoneTabs() {
-            const tabsContainer = document.getElementById('zoneTabs');
-            tabsContainer.innerHTML = ZONES.map(z => `
-                <button onclick="switchZone('${z.id}')" id="tab-${z.id}" 
-                    class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition border ${z.id === currentZoneId ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}">
-                    ${z.name}
-                </button>
-            `).join('');
-        }
-
-        function switchZone(zoneId) {
-            currentZoneId = zoneId;
-            renderZoneTabs();
-            
-            const currentZone = ZONES.find(z => z.id === zoneId);
-            document.getElementById('currentZoneName').innerText = currentZone.name;
-            
-            const issues = appData[currentUnit][currentZoneId] || [];
-            document.getElementById('zoneIssueBadge').innerText = `${issues.length} 缺失`;
-
-            renderIssueList(issues);
-        }
-
-        // 渲染缺失卡片清單
-        function renderIssueList(issues) {
-            const container = document.getElementById('issueList');
-            if (issues.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-10 text-slate-400">
-                        <i class="bi bi-check-circle text-3xl block mb-2 text-emerald-400"></i>
-                        <p class="text-sm">該區域目前無紀錄缺失</p>
-                    </div>`;
-                return;
-            }
-
-            container.innerHTML = issues.map((issue, index) => `
-                <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start gap-4">
-                    <div class="space-y-1.5 flex-1">
-                        <div class="flex items-center gap-2">
-                            <span class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded font-mono font-bold">#${index + 1}</span>
-                            <h4 class="font-bold text-slate-800">${issue.title}</h4>
-                        </div>
-                        <p class="text-sm text-slate-600 leading-relaxed">${issue.desc || '無詳細說明'}</p>
-                        ${issue.photo ? `<img src="${issue.photo}" class="mt-2 w-32 h-24 object-cover rounded-lg border border-slate-200">` : ''}
-                    </div>
-                    <div class="flex items-center gap-2 self-end md:self-start">
-                        <button onclick="editIssue('${issue.id}')" class="p-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button onclick="deleteIssue('${issue.id}')" class="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // 更新儀表板統計
-        function updateDashboard() {
-            const overviewContainer = document.getElementById('zoneOverviewCards');
-            let total = 0;
-
-            overviewContainer.innerHTML = ZONES.map(z => {
-                const count = (appData[currentUnit][z.id] || []).length;
-                total += count;
-                return `
-                    <div onclick="switchZone('${z.id}')" class="cursor-pointer bg-white border border-slate-200/80 hover:border-emerald-500 p-3 rounded-xl transition shadow-sm">
-                        <div class="text-xs font-semibold text-slate-500">${z.name}</div>
-                        <div class="text-lg font-black ${count > 0 ? 'text-rose-600' : 'text-slate-400'} mt-1">${count} <span class="text-xs font-normal text-slate-400">處</span></div>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('totalIssuesCount').innerText = total;
-        }
-
-        // 照片上傳處理 (帶有 Canvas 圖片壓縮)
-        function setupPhotoUploadHandler() {
             document.getElementById('issuePhoto').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = function(evt) {
-                        const img = new Image();
-                        img.src = evt.target.result;
-                        img.onload = function() {
-                            // Canvas 圖片壓縮限制長寬在 800px 以內
-                            const canvas = document.createElement('canvas');
-                            const MAX_WIDTH = 800;
-                            let width = img.width;
-                            let height = img.height;
-
-                            if (width > MAX_WIDTH) {
-                                height *= MAX_WIDTH / width;
-                                width = MAX_WIDTH;
-                            }
-
-                            canvas.width = width;
-                            canvas.height = height;
-
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-
-                            // 轉換為 JPEG 格式，壓縮品質 0.65
-                            currentBase64Image = canvas.toDataURL('image/jpeg', 0.65);
-                            document.getElementById('photoPreview').src = currentBase64Image;
-                            document.getElementById('photoPreviewContainer').classList.remove('hidden');
-                        };
+                        currentBase64Image = evt.target.result;
+                        document.getElementById('photoPreview').src = currentBase64Image;
+                        document.getElementById('photoPreviewContainer').classList.remove('hidden');
                     };
                     reader.readAsDataURL(file);
                 }
             });
+
+            document.getElementById('issueForm').addEventListener('submit', handleSaveIssue);
+        });
+
+        // --- 戶別管理 ---
+
+        function renderUnitOptions() {
+            const select = document.getElementById('unitSelect');
+            select.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
+            select.value = currentUnit;
         }
 
-        function removePhoto() {
-            currentBase64Image = '';
-            document.getElementById('issuePhoto').value = '';
-            document.getElementById('photoPreviewContainer').classList.add('hidden');
-        }
-
-        // Modal 操作邏輯
-        function openAddModal() {
-            document.getElementById('modalTitle').innerText = '新增缺失項目';
-            document.getElementById('issueForm').reset();
-            document.getElementById('issueId').value = '';
-            currentBase64Image = '';
-            document.getElementById('photoPreviewContainer').classList.add('hidden');
-            document.getElementById('issueModal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('issueModal').classList.add('hidden');
-            currentBase64Image = ''; // 關閉時清空圖片快取
-            document.getElementById('photoPreviewContainer').classList.add('hidden');
-        }
-
-        function applyPreset(val) {
-            if (val) {
-                document.getElementById('issueTitle').value = val;
-            }
-        }
-
-        // 儲存缺失資料
-        function handleSaveIssue(e) {
-            e.preventDefault();
-            const id = document.getElementById('issueId').value || 'issue_' + Date.now();
-            const title = document.getElementById('issueTitle').value.trim();
-            const desc = document.getElementById('issueDesc').value.trim();
-
-            const issues = appData[currentUnit][currentZoneId];
-            const existingIndex = issues.findIndex(i => i.id === id);
-
-            const newIssue = {
-                id,
-                title,
-                desc,
-                photo: currentBase64Image || (existingIndex > -1 ? issues[existingIndex].photo : '')
-            };
-
-            if (existingIndex > -1) {
-                issues[existingIndex] = newIssue;
-            } else {
-                issues.push(newIssue);
-            }
-
-            saveToStorage();
-            closeModal();
-            switchZone(currentZoneId);
-            updateDashboard();
-        }
-
-        function editIssue(id) {
-            const issue = appData[currentUnit][currentZoneId].find(i => i.id === id);
-            if (!issue) return;
-
-            document.getElementById('modalTitle').innerText = '編輯缺失項目';
-            document.getElementById('issueId').value = issue.id;
-            document.getElementById('issueTitle').value = issue.title;
-            document.getElementById('issueDesc').value = issue.desc;
-
-            if (issue.photo) {
-                currentBase64Image = issue.photo;
-                document.getElementById('photoPreview').src = issue.photo;
-                document.getElementById('photoPreviewContainer').classList.remove('hidden');
-            } else {
-                currentBase64Image = '';
-                document.getElementById('photoPreviewContainer').classList.add('hidden');
-            }
-
-            document.getElementById('issueModal').classList.remove('hidden');
-        }
-
-        function deleteIssue(id) {
-            if (!confirm('確定要刪除此項缺失紀錄嗎？')) return;
-            appData[currentUnit][currentZoneId] = appData[currentUnit][currentZoneId].filter(i => i.id !== id);
-            saveToStorage();
-            switchZone(currentZoneId);
-            updateDashboard();
-        }
-
-        // 戶別管理邏輯
         function openUnitModal() {
             renderUnitManageList();
             document.getElementById('unitModal').classList.remove('hidden');
@@ -464,33 +284,34 @@
         }
 
         function renderUnitManageList() {
-            const list = document.getElementById('unitManageList');
-            list.innerHTML = units.map(u => `
-                <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                    <span class="text-sm font-medium text-slate-700">${u}</span>
-                    ${units.length > 1 ? `
-                        <button onclick="deleteUnit('${u}')" class="text-rose-500 hover:text-rose-700 text-sm px-2 py-1">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    ` : ''}
+            const container = document.getElementById('unitListContainer');
+            container.innerHTML = units.map(u => `
+                <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <span class="font-bold text-slate-700 text-sm">${u}</span>
+                    <button onclick="deleteUnit('${u}')" class="text-slate-400 hover:text-rose-500 transition px-2">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </div>
             `).join('');
         }
 
-        function addUnit() {
-            const input = document.getElementById('newUnitName');
-            const name = input.value.trim();
-            if (!name) return;
-            if (units.includes(name)) {
-                alert('戶別已存在');
+        function addNewUnit() {
+            const input = document.getElementById('newUnitInput');
+            const val = input.value.trim();
+            if (!val) return;
+            if (units.includes(val)) {
+                alert('該戶別名稱已存在');
                 return;
             }
-
-            units.push(name);
-            initDataStructure();
+            units.push(val);
+            localStorage.setItem('inspection_units', JSON.stringify(units));
+            currentUnit = val;
+            input.value = '';
+            
             renderUnitOptions();
             renderUnitManageList();
-            input.value = '';
+            switchZone(currentZoneId);
+            updateDashboard();
         }
 
         function deleteUnit(unitName) {
@@ -498,12 +319,13 @@
                 alert('至少需保留一個戶別');
                 return;
             }
-            if (!confirm(`確定要刪除戶別 ${unitName} 及其所有缺失資料嗎？`)) return;
+            if (!confirm(`確定要刪除戶別 ${unitName} 及其所有資料嗎？`)) return;
 
             units = units.filter(u => u !== unitName);
             delete appData[unitName];
-            delete zonePlans[unitName]; // 同步刪除戶別對應的平面圖設定
+            delete zonePlans[unitName];
 
+            localStorage.setItem('inspection_units', JSON.stringify(units));
             saveToStorage();
 
             currentUnit = units[0];
@@ -513,44 +335,263 @@
             updateDashboard();
         }
 
-        // 產生報表與列印處理
-        function generateReport() {
-            document.getElementById('printUnitName').innerText = currentUnit;
-            document.getElementById('printDate').innerText = new Date().toLocaleDateString('zh-TW');
+        // --- 更換區域平面圖 ---
 
-            const reportContainer = document.getElementById('printContent');
-            let hasIssues = false;
+        function handleUploadPlan(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-            let html = ZONES.map(z => {
-                const issues = appData[currentUnit][z.id] || [];
-                if (issues.length === 0) return '';
-                hasIssues = true;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Img = e.target.result;
+                
+                if (!zonePlans[currentUnit]) zonePlans[currentUnit] = {};
+                zonePlans[currentUnit][currentZoneId] = base64Img;
+
+                localStorage.setItem('inspection_plans', JSON.stringify(zonePlans));
+                document.getElementById('zonePlanImg').src = base64Img;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function getPlanUrl(unit, zoneId) {
+            if (zonePlans[unit] && zonePlans[unit][zoneId]) {
+                return zonePlans[unit][zoneId];
+            }
+            return DEFAULT_PLANS[zoneId] || '';
+        }
+
+        // --- UI & 分區選單 ---
+
+        function renderZoneTabs() {
+            const container = document.getElementById('zoneTabs');
+            container.innerHTML = ZONES.map(zone => `
+                <button onclick="switchZone('${zone.id}')" id="tab-${zone.id}" 
+                        class="px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition border ${
+                            zone.id === currentZoneId 
+                            ? 'bg-slate-800 text-white border-slate-800 shadow-sm' 
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }">
+                    ${zone.name}
+                </button>
+            `).join('');
+        }
+
+        function switchZone(zoneId) {
+            currentZoneId = zoneId;
+            const targetZone = ZONES.find(z => z.id === zoneId);
+
+            document.getElementById('currentZoneTitle').innerText = targetZone.name;
+            document.getElementById('zonePlanImg').src = getPlanUrl(currentUnit, zoneId);
+
+            ZONES.forEach(z => {
+                const btn = document.getElementById(`tab-${z.id}`);
+                if (btn) {
+                    btn.className = z.id === zoneId 
+                        ? 'px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition border bg-slate-800 text-white border-slate-800 shadow-sm' 
+                        : 'px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition border bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+                }
+            });
+
+            renderIssueList();
+        }
+
+        function updateDashboard() {
+            document.getElementById('currentUnitTitle').innerText = currentUnit;
+            const unitData = appData[currentUnit] || {};
+            
+            let total = 0;
+            const cardsContainer = document.getElementById('zoneOverviewCards');
+
+            cardsContainer.innerHTML = ZONES.map(zone => {
+                const count = (unitData[zone.id] || []).length;
+                total += count;
 
                 return `
-                    <div class="space-y-3">
-                        <h2 class="text-lg font-bold text-slate-800 border-b pb-1 border-slate-300">${z.name} (${issues.length} 處缺失)</h2>
-                        <div class="grid grid-cols-1 gap-4">
-                            ${issues.map((i, idx) => `
-                                <div class="border border-slate-200 p-3 rounded-lg flex justify-between gap-4">
-                                    <div class="space-y-1">
-                                        <div class="font-bold text-slate-900 text-sm">#${idx + 1} ${i.title}</div>
-                                        <div class="text-xs text-slate-600">${i.desc || '無詳細描述'}</div>
-                                    </div>
-                                    ${i.photo ? `<img src="${i.photo}" class="w-24 h-20 object-cover rounded border border-slate-300">` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
+                    <div onclick="switchZone('${zone.id}')" class="p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:border-amber-400 hover:bg-amber-50/30 transition text-center">
+                        <div class="text-xs font-semibold text-slate-500 truncate">${zone.name}</div>
+                        <div class="text-lg font-black ${count > 0 ? 'text-amber-600' : 'text-slate-400'}">${count}</div>
                     </div>
                 `;
             }).join('');
 
-            if (!hasIssues) {
-                html = `<div class="text-center py-12 text-slate-500 font-medium">該戶別完全無缺失紀錄</div>`;
+            document.getElementById('totalIssuesCount').innerText = total;
+        }
+
+        function renderIssueList() {
+            const listContainer = document.getElementById('issueList');
+            const issues = (appData[currentUnit] && appData[currentUnit][currentZoneId]) || [];
+
+            if (issues.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 text-slate-400">
+                        <i class="bi bi-check-circle text-3xl text-emerald-400 block mb-2"></i>
+                        <p class="text-sm">此區域目前無缺失紀錄</p>
+                    </div>
+                `;
+                return;
             }
 
-            reportContainer.innerHTML = html;
+            listContainer.innerHTML = issues.map(issue => `
+                <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex gap-4 items-start relative">
+                    ${issue.photo ? `<img src="${issue.photo}" class="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border flex-shrink-0">` : ''}
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start pr-6">
+                            <h4 class="font-bold text-slate-800 text-base truncate">${issue.title}</h4>
+                        </div>
+                        <p class="text-slate-600 text-sm mt-1 leading-relaxed">${issue.desc || '無詳細說明'}</p>
+                        <span class="text-[10px] text-slate-400 mt-2 block">${issue.date}</span>
+                    </div>
+                    <button onclick="deleteIssue('${issue.id}')" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 transition">
+                        <i class="bi bi-trash text-lg"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // --- 缺失記錄處理 (同步 GAS) ---
+
+        async function handleSaveIssue(e) {
+            e.preventDefault();
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerText = '儲存中...';
+
+            const title = document.getElementById('issueTitle').value;
+            const desc = document.getElementById('issueDesc').value;
+            const zoneName = ZONES.find(z => z.id === currentZoneId)?.name || currentZoneId;
+            const dateStr = new Date().toLocaleString('zh-TW', { hour12: false });
+
+            const newIssue = {
+                id: Date.now().toString(),
+                title: title,
+                desc: desc,
+                photo: currentBase64Image,
+                date: dateStr
+            };
+
+            // 1. 本地 LocalStorage 儲存
+            if (!appData[currentUnit]) appData[currentUnit] = {};
+            if (!appData[currentUnit][currentZoneId]) appData[currentUnit][currentZoneId] = [];
+
+            appData[currentUnit][currentZoneId].push(newIssue);
+            saveToStorage();
+
+            // 2. 傳送到 Google Apps Script 寫入 Google Sheet
+            if (GAS_URL) {
+                try {
+                    const payload = {
+                        id: newIssue.id,
+                        unit: currentUnit,
+                        zone: zoneName,
+                        title: title,
+                        desc: desc,
+                        photoBase64: currentBase64Image,
+                        date: dateStr
+                    };
+
+                    await fetch(GAS_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // 解決跨網域 CORS 問題
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (error) {
+                    console.error('上傳至 Google Sheets 失敗：', error);
+                }
+            }
+
+            // 重置按鈕狀態與 Modal
+            saveBtn.disabled = false;
+            saveBtn.innerText = '儲存缺失';
+
+            closeModal();
+            updateDashboard();
+            renderIssueList();
+        }
+
+        function deleteIssue(issueId) {
+            if (!confirm('確定要刪除這筆缺失紀錄嗎？')) return;
+            
+            if (appData[currentUnit] && appData[currentUnit][currentZoneId]) {
+                appData[currentUnit][currentZoneId] = appData[currentUnit][currentZoneId].filter(item => item.id !== issueId);
+                saveToStorage();
+                updateDashboard();
+                renderIssueList();
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('inspection_data', JSON.stringify(appData));
+        }
+
+        function openModal() {
+            document.getElementById('issueForm').reset();
+            currentBase64Image = '';
+            document.getElementById('photoPreviewContainer').classList.add('hidden');
+            document.getElementById('issueModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('issueModal').classList.add('hidden');
+        }
+
+        function applyPreset(val) {
+            if (val) document.getElementById('issueTitle').value = val;
+        }
+
+        // --- 報表產出 ---
+
+        function generateReport() {
+            const unitData = appData[currentUnit] || {};
+            document.getElementById('reportUnit').innerText = currentUnit;
+            document.getElementById('reportDate').innerText = new Date().toLocaleDateString('zh-TW');
+
+            const summaryTable = document.getElementById('reportSummaryTable');
+            summaryTable.innerHTML = ZONES.map(z => {
+                const count = (unitData[z.id] || []).length;
+                return `
+                    <tr>
+                        <td class="border border-slate-300 p-2">${z.name}</td>
+                        <td class="border border-slate-300 p-2 text-center font-bold">${count}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const detailContainer = document.getElementById('reportDetailCards');
+            let hasData = false;
+            let detailHtml = '';
+
+            ZONES.forEach(z => {
+                const issues = unitData[z.id] || [];
+                if (issues.length > 0) {
+                    hasData = true;
+                    detailHtml += `<div class="font-bold text-slate-700 border-b pb-1 mt-4">${z.name}</div>`;
+                    issues.forEach((issue, index) => {
+                        detailHtml += `
+                            <div class="flex gap-4 border-b border-slate-100 py-2">
+                                <div class="w-6 text-slate-400 font-bold">${index + 1}.</div>
+                                ${issue.photo ? `<img src="${issue.photo}" class="w-16 h-16 object-cover rounded">` : ''}
+                                <div class="flex-1">
+                                    <div class="font-bold text-slate-800">${issue.title}</div>
+                                    <div class="text-xs text-slate-600">${issue.desc || '無描述'}</div>
+                                    <div class="text-[10px] text-slate-400 mt-1">${issue.date}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            });
+
+            if (!hasData) {
+                detailHtml = '<p class="text-sm text-slate-500 italic">無任何缺失資料。</p>';
+            }
+
+            detailContainer.innerHTML = detailHtml;
             window.print();
         }
     </script>
 </body>
 </html>
+
+有甚麼問題
