@@ -32,6 +32,11 @@
                     <i class="bi bi-cloud-arrow-down-fill"></i> 同步雲端
                 </button>
 
+                <!-- 結案清理按鈕 -->
+                <button onclick="purgeDeletedItems()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-2.5 py-1.5 rounded-lg border border-rose-500 transition flex items-center gap-1 shadow-sm" title="徹底刪除試算表中已軟刪除的紀錄">
+                    <i class="bi bi-trash3-fill"></i> 結案清理
+                </button>
+
                 <!-- 戶別選擇與管理 -->
                 <label for="unitSelect" class="text-xs text-slate-300">戶別：</label>
                 <select id="unitSelect" class="bg-slate-700 text-white text-sm font-semibold rounded-lg px-3 py-1.5 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-400">
@@ -48,7 +53,7 @@
         <!-- 雲端同步狀態提示條 -->
         <div id="loadingStatus" class="hidden bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-2 rounded-xl flex items-center gap-2 no-print">
             <span class="animate-spin text-amber-600"><i class="bi bi-arrow-repeat"></i></span>
-            <span>正在與 Google 試算表同步資料中...</span>
+            <span id="loadingText">正在與 Google 試算表同步資料中...</span>
         </div>
 
         <!-- Dashboard 統計面板 -->
@@ -158,11 +163,11 @@
         </div>
     </div>
 
-    <!-- 新增缺失 Modal -->
+    <!-- 新增/編輯缺失 Modal -->
     <div id="issueModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
             <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="font-bold text-lg text-slate-800">新增缺失記錄</h3>
+                <h3 class="font-bold text-lg text-slate-800" id="modalTitle">新增缺失記錄</h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class="bi bi-x-lg"></i></button>
             </div>
 
@@ -220,12 +225,13 @@
         };
 
         // 更新為你最新的 Google Apps Script Web App URL
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwGk38FGNSynuUNMEvl56aCtFMO43k5I2X-TS61HBbeC7iDABUnt_h4QhoYM4XBZO6g/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbH2PQWqFAveyuouWKtF6UMEes0vWUj4gNkjR2iKKcAo_C1PRNcSqwgPWy33EbrKCnI/exec";
         
         let units = JSON.parse(localStorage.getItem('inspection_units')) || ['A1-3F', 'A2-5F', 'B1-8F'];
         let currentUnit = units[0] || 'A1-3F';
         let currentZoneId = 'hallway';
         let currentBase64Image = '';
+        let editingIssueId = null; // 紀錄目前編輯中的缺失 ID
 
         let appData = JSON.parse(localStorage.getItem('inspection_data')) || {};
         let zonePlans = JSON.parse(localStorage.getItem('inspection_plans')) || {};
@@ -280,11 +286,39 @@
             document.getElementById('issueForm').addEventListener('submit', handleSaveIssue);
         });
 
+        // 顯示/隱藏載入提示條
+        function toggleLoading(show, text = '正在與 Google 試算表同步資料中...') {
+            const statusBox = document.getElementById('loadingStatus');
+            const loadingText = document.getElementById('loadingText');
+            if (statusBox) {
+                if (show) {
+                    if (loadingText) loadingText.innerText = text;
+                    statusBox.classList.remove('hidden');
+                } else {
+                    statusBox.classList.add('hidden');
+                }
+            }
+        }
+
+        // --- 封裝 POST 請求發送函式 ---
+        async function sendGasPost(payload) {
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                return await response.json();
+            } catch (err) {
+                console.error("API POST 請求失敗: ", err);
+                return null;
+            }
+        }
+
         // --- 從 Google 試算表同步資料 (GET) ---
         async function fetchCloudData() {
             if (!GAS_URL) return;
-            const statusBox = document.getElementById('loadingStatus');
-            if (statusBox) statusBox.classList.remove('hidden');
+            toggleLoading(true, '正在下載雲端最新缺失資料...');
 
             try {
                 const res = await fetch(GAS_URL);
@@ -300,15 +334,13 @@
                         if (!newAppData[unit]) newAppData[unit] = {};
                         if (!newAppData[unit][zoneId]) newAppData[unit][zoneId] = [];
 
-                        if (!newAppData[unit][zoneId].some(i => i.id === item.id)) {
-                            newAppData[unit][zoneId].push({
-                                id: item.id,
-                                title: item.title,
-                                desc: item.desc,
-                                photo: item.photo,
-                                date: item.date
-                            });
-                        }
+                        newAppData[unit][zoneId].push({
+                            id: String(item.id),
+                            title: item.title,
+                            desc: item.desc,
+                            photo: item.photo,
+                            date: item.date
+                        });
 
                         if (!units.includes(unit)) {
                             units.push(unit);
@@ -324,7 +356,7 @@
             } catch (err) {
                 console.error("雲端同步失敗: ", err);
             } finally {
-                if (statusBox) statusBox.classList.add('hidden');
+                toggleLoading(false);
             }
         }
 
@@ -494,20 +526,49 @@
                 <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex gap-4 items-start relative">
                     ${issue.photo ? `<img src="${issue.photo}" class="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border flex-shrink-0">` : ''}
                     <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-start pr-6">
+                        <div class="flex justify-between items-start pr-16">
                             <h4 class="font-bold text-slate-800 text-base truncate">${issue.title}</h4>
                         </div>
                         <p class="text-slate-600 text-sm mt-1 leading-relaxed">${issue.desc || '無詳細說明'}</p>
                         <span class="text-[10px] text-slate-400 mt-2 block">${issue.date}</span>
                     </div>
-                    <button onclick="deleteIssue('${issue.id}')" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 transition">
-                        <i class="bi bi-trash text-lg"></i>
-                    </button>
+                    <!-- 按鈕區：編輯與刪除 -->
+                    <div class="absolute top-3 right-3 flex items-center gap-2">
+                        <button onclick="startEditIssue('${issue.id}')" class="text-slate-400 hover:text-indigo-600 transition" title="編輯">
+                            <i class="bi bi-pencil-square text-lg"></i>
+                        </button>
+                        <button onclick="deleteIssue('${issue.id}')" class="text-slate-400 hover:text-rose-500 transition" title="刪除">
+                            <i class="bi bi-trash text-lg"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
 
-        // --- 儲存缺失紀錄 (POST) ---
+        // --- 開啟編輯視窗 ---
+        function startEditIssue(issueId) {
+            const issues = (appData[currentUnit] && appData[currentUnit][currentZoneId]) || [];
+            const issue = issues.find(i => String(i.id) === String(issueId));
+            if (!issue) return;
+
+            editingIssueId = issue.id;
+            document.getElementById('modalTitle').innerText = "編輯缺失記錄";
+            document.getElementById('issueTitle').value = issue.title;
+            document.getElementById('issueDesc').value = issue.desc;
+            
+            if (issue.photo) {
+                currentBase64Image = issue.photo;
+                document.getElementById('photoPreview').src = issue.photo;
+                document.getElementById('photoPreviewContainer').classList.remove('hidden');
+            } else {
+                currentBase64Image = '';
+                document.getElementById('photoPreviewContainer').classList.add('hidden');
+            }
+
+            document.getElementById('issueModal').classList.remove('hidden');
+        }
+
+        // --- 儲存缺失紀錄 (POST - Create / Update) ---
         async function handleSaveIssue(e) {
             e.preventDefault();
             const saveBtn = document.getElementById('saveBtn');
@@ -519,43 +580,58 @@
             const zoneName = ZONES.find(z => z.id === currentZoneId)?.name || currentZoneId;
             const dateStr = new Date().toLocaleString('zh-TW', { hour12: false });
 
-            const newIssue = {
-                id: Date.now().toString(),
-                title: title,
-                desc: desc,
-                photo: currentBase64Image,
-                date: dateStr
-            };
+            const isEdit = !!editingIssueId;
+            const issueId = isEdit ? editingIssueId : Date.now().toString();
 
-            // 1. 本地 LocalStorage 儲存
             if (!appData[currentUnit]) appData[currentUnit] = {};
             if (!appData[currentUnit][currentZoneId]) appData[currentUnit][currentZoneId] = [];
 
-            appData[currentUnit][currentZoneId].push(newIssue);
+            if (isEdit) {
+                // 更新 LocalStorage 本地資料
+                const idx = appData[currentUnit][currentZoneId].findIndex(i => String(i.id) === String(issueId));
+                if (idx !== -1) {
+                    appData[currentUnit][currentZoneId][idx].title = title;
+                    appData[currentUnit][currentZoneId][idx].desc = desc;
+                    if (currentBase64Image) {
+                        appData[currentUnit][currentZoneId][idx].photo = currentBase64Image;
+                    }
+                }
+            } else {
+                // 新增 LocalStorage 本地資料
+                appData[currentUnit][currentZoneId].push({
+                    id: issueId,
+                    title: title,
+                    desc: desc,
+                    photo: currentBase64Image,
+                    date: dateStr
+                });
+            }
             saveToStorage();
 
-            // 2. 傳送到 Google Apps Script
+            // 上傳至 Google Apps Script 雲端
             if (GAS_URL) {
-                try {
-                    const payload = {
-                        id: newIssue.id,
-                        unit: currentUnit,
-                        zone: zoneName,
-                        title: title,
-                        desc: desc,
-                        photoBase64: currentBase64Image,
-                        date: dateStr
-                    };
+                toggleLoading(true, isEdit ? '正在更新雲端資料...' : '正在上傳至雲端...');
+                const payload = {
+                    action: isEdit ? 'update' : 'create',
+                    id: issueId,
+                    unit: currentUnit,
+                    zone: zoneName,
+                    title: title,
+                    desc: desc,
+                    photoBase64: currentBase64Image,
+                    date: dateStr
+                };
 
-                    await fetch(GAS_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                } catch (error) {
-                    console.error('上傳至 Google Sheets 失敗：', error);
+                const res = await sendGasPost(payload);
+                if (res && res.status === 'success') {
+                    // 若是新增且回傳了圖片網址，即時覆蓋本地為公開連結
+                    if (!isEdit && res.photoUrl) {
+                        const target = appData[currentUnit][currentZoneId].find(i => i.id === issueId);
+                        if (target) target.photo = res.photoUrl;
+                        saveToStorage();
+                    }
                 }
+                toggleLoading(false);
             }
 
             saveBtn.disabled = false;
@@ -566,14 +642,46 @@
             renderIssueList();
         }
 
-        function deleteIssue(issueId) {
+        // --- 軟刪除缺失紀錄 (POST - Delete) ---
+        async function deleteIssue(issueId) {
             if (!confirm('確定要刪除這筆缺失紀錄嗎？')) return;
             
             if (appData[currentUnit] && appData[currentUnit][currentZoneId]) {
-                appData[currentUnit][currentZoneId] = appData[currentUnit][currentZoneId].filter(item => item.id !== issueId);
+                appData[currentUnit][currentZoneId] = appData[currentUnit][currentZoneId].filter(item => String(item.id) !== String(issueId));
                 saveToStorage();
                 updateDashboard();
                 renderIssueList();
+
+                // 雲端同步軟刪除
+                if (GAS_URL) {
+                    toggleLoading(true, '正在刪除雲端紀錄...');
+                    await sendGasPost({
+                        action: 'delete',
+                        id: issueId
+                    });
+                    toggleLoading(false);
+                }
+            }
+        }
+
+        // --- 建案結案清理 (POST - purge_unit) ---
+        async function purgeDeletedItems() {
+            if (!confirm(`確定要清理戶別「${currentUnit}」在 Google 試算表中已軟刪除的資料嗎？此動作無法復原。`)) return;
+
+            if (GAS_URL) {
+                toggleLoading(true, '正在進行雲端結案清理...');
+                const res = await sendGasPost({
+                    action: 'purge_unit',
+                    unit: currentUnit
+                });
+                toggleLoading(false);
+
+                if (res && res.status === 'success') {
+                    alert('結案清理完成！');
+                    fetchCloudData(); // 重新整理
+                } else {
+                    alert('清理失敗，請稍後再試。');
+                }
             }
         }
 
@@ -583,6 +691,8 @@
         }
 
         function openModal() {
+            editingIssueId = null;
+            document.getElementById('modalTitle').innerText = "新增缺失記錄";
             document.getElementById('issueForm').reset();
             currentBase64Image = '';
             document.getElementById('photoPreviewContainer').classList.add('hidden');
@@ -590,6 +700,7 @@
         }
 
         function closeModal() {
+            editingIssueId = null;
             document.getElementById('issueModal').classList.add('hidden');
         }
 
